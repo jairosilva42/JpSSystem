@@ -1,0 +1,242 @@
+/*-[ Read me]-------------------------------------------------------------------
+Regra: Demonstrar o valor do evento 973 (consignado) gerado no recibo de férias.
+Autor: Jairo Silva
+Data: 03/10/2026
+Regra de negócio:
+1 - Definição do período da competência em execução
+2 - Verificar se, dentro desse período, o colaborador esteve de férias.
+- Considerar r038afa.sitafa = 2 para identificar férias na competência.
+3 - Identificar a quantidade de dias de férias dentro do período da competência.
+4 - Verificar se o colaborador possui desconto referente ao evento 973.
+5 - Calcular o valor proporcional do evento 973 de acordo com a quantidade de dias de férias na competência.
+6 - Atribuir o valor calculado ao evento informativo correspondente.
+------------------------------------------------------------------------------*/
+
+/*-[Read me - O que faz a regra?]----------------------------------------------
+Regra: Memória de cálculo proporcional do evento durante o período de férias.
+Exemplo:
+Evento 973: R$ 1.000,00
+Estamos calculando a folha da competência 09/2026.
+O colaborador 1 inicia as férias em 17/09/2026 e retorna em 13/10/2026,
+totalizando 30 dias de férias.
+Competência 09/2026:
+* Início das férias: 17/09/2026
+* Quantidade de dias de férias na competência: 14 dias
+* Valor diário: R$ 1.000,00 / 30 = R$ 33,33
+Valor proporcional:
+(1.000,00 / 30) * 14 = R$ 466,67
+No evento 973 da competência 09/2026, o sistema deverá demonstrar:
+R$ 466,67
+Competência 10/2026:
+* Quantidade de dias restantes de férias: 16 dias
+Valor proporcional:
+(1.000,00 / 30) * 16 = R$ 533,33
+No evento 973 da competência 10/2026, o sistema deverá demonstrar:
+R$ 533,33
+Memória de cálculo:
+A = R$ 466,67  (09/2026)
+B = R$ 533,33  (10/2026)
+A + B = R$ 1.000,00
+Dessa forma, o valor total do evento 973 é distribuído proporcionalmente
+entre as competências conforme a quantidade de dias de férias existentes
+em cada período.
+Observação:
+A quantidade de dias deve ser calculada considerando efetivamente os dias
+de férias que pertencem a cada competência, evitando que o valor integral
+do evento seja demonstrado em uma única competência.
+-----------------------------------------------------------------------------*/
+
+definir alfa asql;
+definir alfa aqry;
+
+definir data dDatAfa;
+definir data dDatTer;
+
+definir data dIniPer;
+definir data dFimPer;
+
+nnumemp = empatu;
+ntipcol = ETipCol;
+nnumcad = ENumCad;
+nsitafa = 2;
+
+nTemFer = 0;
+nQtdDia = 0;
+nQtdDiaRef = 0;
+
+nMesCmp = 0;
+nMesFim = 0;
+nDia = 0;
+nAno = 0;
+
+nValEvtCal = 0;
+nValEvtDia = 0;
+nValEvtRef = 0;
+
+nCodCal = CodCal;
+nCodEve = 1;
+
+@--------------------------------------------------------------------------@
+@ 1 - Definição do período da competência em execução                      @
+@--------------------------------------------------------------------------@
+
+dIniPer = IniCmp;
+dFimPer = FimCmp;
+
+@--------------------------------------------------------------------------@
+@ 2 - Verificar se o colaborador possui férias dentro da competência       @
+@                                                                          @
+@ As férias são consideradas quando existe interseção entre o período      @
+@ de férias e o período da competência.                                    @
+@--------------------------------------------------------------------------@
+
+asql = "SELECT numemp, tipcol, numcad, datafa, datter, sitafa           \
+          FROM r038afa                                                     \
+         WHERE numemp = :numemp                                            \
+           AND tipcol = :tipcol                                             \
+           AND numcad = :numcad                                             \
+           AND sitafa = :sitafa                                             \
+           AND datafa <= :FimPer                                            \
+           AND datter >= :IniPer                                            \
+         ORDER BY datafa DESC";
+
+SQL_Criar(aqry);
+SQL_UsarAbrangencia(aqry, 0);
+SQL_UsarSQLSenior2(aqry, 0);
+SQL_DefinirComando(aqry, asql);
+
+SQL_DefinirInteiro(aqry, "numemp", nnumemp);
+SQL_DefinirInteiro(aqry, "tipcol", ntipcol);
+SQL_DefinirInteiro(aqry, "numcad", nnumcad);
+SQL_DefinirInteiro(aqry, "sitafa", nsitafa);
+SQL_DefinirData(aqry, "FimPer", dFimPer);
+SQL_DefinirData(aqry, "IniPer", dIniPer);
+
+SQL_AbrirCursor(aqry);
+
+se (SQL_EOF(aqry) = 0)
+Inicio
+    nTemFer = 1;
+
+    SQL_RetornarData(aqry, "datafa", dDatAfa);
+    SQL_RetornarData(aqry, "datter", dDatTer);
+Fim;
+
+SQL_FecharCursor(aqry);
+SQL_Destruir(aqry);
+
+@--------------------------------------------------------------------------@
+@ 3 - Se possui férias, identificar a quantidade de dias que pertence      @
+@     à competência em processamento                                       @
+@--------------------------------------------------------------------------@
+
+se (nTemFer = 1)
+Inicio
+
+    @---------------------------------------------------------------------@
+    @ Quantidade total de dias do período de férias                       @
+    @---------------------------------------------------------------------@
+
+    nQtdDia = (dDatTer - dDatAfa) + 1;
+
+    @---------------------------------------------------------------------@
+    @ Identificar mês da competência e mês do término das férias          @
+    @---------------------------------------------------------------------@
+
+    desmontadata(dDatAfa, nDia, nMesCmp, nAno);
+
+    desmontadata(dDatTer, nDia, nMesFim, nAno);
+
+    @---------------------------------------------------------------------@
+    @ Quantidade de dias de férias dentro da competência                  @
+    @---------------------------------------------------------------------@
+    @                                                                     @
+    @ Se as férias começam na competência e terminam depois dela:         @
+    @ calcula do início das férias até o último dia da competência.       @
+    @                                                                     @
+    @ Se as férias começaram antes da competência e terminam dentro dela: @
+    @ calcula do início da competência até o término das férias.          @
+    @                                                                     @
+    @ Se as férias atravessam completamente a competência:                @
+    @ considera todos os dias da competência.                             @
+    @---------------------------------------------------------------------@
+
+    se(nMesCmp=nMesFim)
+    inicio
+        nQtdDiaRef =  nQtdDia;
+    fim senao
+    inicio
+        se(nMesCmp<nMesFim)
+        inicio
+           nQtdDiaRef =  dFimPer - dDatAfa;
+        fim
+        se(nMesCmp>nMesFim)
+        inicio
+           nQtdDiaRef =  (dDatTer - dIniPer)+1;
+        fim
+
+    fim
+
+
+
+
+    @---------------------------------------------------------------------@
+    @ 4 - Verificar se existe evento 973 gerado no recibo de férias       @
+    @---------------------------------------------------------------------@
+
+    se (nQtdDiaRef > 0)
+    Inicio
+
+        asql = "SELECT tabeve, codeve, refeve, valeve,                       \
+                       (valeve / 30) valevedia                            \
+                  FROM r046ffr                                                \
+                 WHERE numemp = :numemp                                       \
+                   AND tipcol = :tipcol                                        \
+                   AND numcad = :numcad                                        \
+                   AND codcal = :codcal                                        \
+                   AND codeve = :codeve";
+
+        SQL_Criar(aqry);
+        SQL_UsarAbrangencia(aqry, 0);
+        SQL_UsarSQLSenior2(aqry, 0);
+        SQL_DefinirComando(aqry, asql);
+
+        SQL_DefinirInteiro(aqry, "numemp", nnumemp);
+        SQL_DefinirInteiro(aqry, "tipcol", ntipcol);
+        SQL_DefinirInteiro(aqry, "numcad", nnumcad);
+        SQL_DefinirInteiro(aqry, "codcal", nCodCal);
+        SQL_DefinirInteiro(aqry, "codeve", nCodEve);
+
+        SQL_AbrirCursor(aqry);
+
+        se (SQL_EOF(aqry) = 0)
+        Inicio
+
+            SQL_RetornarFlutuante(aqry, "valeve", nValEvtCal);
+            SQL_RetornarFlutuante(aqry, "valevedia", nValEvtDia);
+
+            @-------------------------------------------------------------@
+            @ Valor proporcional do evento 973 para a competência        @
+            @-------------------------------------------------------------@
+
+            nValEvtRef = nValEvtDia * nQtdDiaRef;
+
+        Fim;
+
+        SQL_FecharCursor(aqry);
+        SQL_Destruir(aqry);
+
+        @-----------------------------------------------------------------@
+        @ 5 - Retornar o valor calculado para o evento                    @
+        @-----------------------------------------------------------------@
+
+        se (nValEvtRef > 0)
+        Inicio
+            valeve = nValEvtRef;
+        Fim;
+
+    Fim;
+
+Fim;
+
+x++;
