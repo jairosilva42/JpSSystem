@@ -1,0 +1,107 @@
+
+
+definir alfa asql;
+definir alfa aqry;
+
+@---------------------------------------------Entrada do WS--------------------@
+definir alfa  ENumEmp;
+definir alfa  ETipCol;
+definir alfa  ENumCad;
+definir alfa  EDatApu;
+
+definir alfa aNomFun;
+definir alfa aPosTra;
+definir alfa aDesPos;
+definir alfa aCadGes;
+definir alfa aNomGes;
+definir alfa aCodGhe;
+definir alfa aDesGhe;
+
+
+
+ENumEmp = colaborador.ENumEmp;
+ETipCol = colaborador.ETipCol;
+ENumCad = colaborador.ENumCad;
+EDatApu = colaborador.EDatApu;
+
+ENumEmp = "7";
+ETipCol = "1";
+ENumCad = "410";
+
+/*------------------------------------------------------------------------------
+Buscar o colaborador cadastrado
+*/
+
+nAchouColaborador = 0;
+
+asql = "SELECT fun.numemp,                                       \
+       fun.tipcol,                                               \
+       fun.numcad,                                               \
+       fun.nomfun,                                               \
+       fun.postra,                                               \
+       pst.despos,                                               \
+       pgh.codpra,                                               \
+       pgh.codghe,                                               \
+       ghe.desghe,                                               \
+       '' as CadGes,                                             \
+       '' as NomGes                                              \
+  FROM r034fun fun                                               \
+  LEFT JOIN r017pos pst                                          \
+    ON pst.estpos = fun.estpos                                   \
+   AND pst.postra = fun.postra                                   \
+  LEFT JOIN r017ghe pgh                                          \
+    ON pgh.estpos = fun.estpos                                   \
+   AND pgh.postra = fun.postra                                   \
+  LEFT JOIN r583ghe ghe                                          \
+    ON ghe.codpra = pgh.codpra                                    \
+   AND ghe.codghe = pgh.codghe                                    \
+ WHERE fun.numemp = :numemp                                        \
+   AND fun.tipcol = :tipcol                                        \
+   AND fun.numcad = :numcad";
+
+SQL_Criar(aqry);
+SQL_UsarAbrangencia(aqry, 0);
+SQL_UsarSQLSenior2(aqry, 0);
+SQL_DefinirComando(aqry, asql);
+SQL_DefinirAlfa(aqry, "numemp", ENumEmp);
+SQL_DefinirAlfa(aqry, "tipcol", ETipCol);
+SQL_DefinirAlfa(aqry, "numcad", ENumCad);
+@SQL_DefinirData(aqry, "FimPer", dFimPer);@
+
+SQL_AbrirCursor(aqry);
+
+se (SQL_EOF(aqry) = 0)
+Inicio
+    nAchouColaborador = 1;
+    SQL_RetornarAlfa(aqry, "nomfun", aNomFun);
+    SQL_RetornarAlfa(aqry, "postra", aPosTra);
+    SQL_RetornarAlfa(aqry, "despos", aDesPos);           
+
+Fim;
+
+SQL_FecharCursor(aqry);
+SQL_Destruir(aqry);
+
+
+se(nAchouColaborador>=1){
+      colaborador.Retorno.criarLinha();      
+      colaborador.Retorno.NumEmp = ENumEmp; 
+      colaborador.Retorno.TipCol = ETipCol; 
+      colaborador.Retorno.NumCad = ENumCad; 
+      colaborador.Retorno.NomFun = aNomFun;
+      colaborador.Retorno.PosTra = aPosTra; 
+      colaborador.Retorno.DesPos = aDesPos;
+      
+      
+      colaborador.Retorno.CodGhe = aCodGhe; 
+      colaborador.Retorno.DesGhe = aDesGhe;   
+      
+      colaborador.Retorno.CadGes = aCadGes; 
+      colaborador.Retorno.NomGes = aNomGes;                 
+                    
+}
+
+
+
+x++;
+    

@@ -1,0 +1,55 @@
+Objetivo
+
+Criar um evento tipo outros para demonstrar o valor do evento(973) de consignado gerado no recibo de férias, o mesmo pode gerar proporcional conforme os dias de férias realizado na competência.
+
+Escopo
+
+- Criar Eventos Tipo 4 Outros;
+- Criar uma regra para identificar colaboradores com dias de férias na competencia;
+- Verificar se neste recibo de férias gerou o evento 973
+- Lançar o valor do evento 973 e caso seja proporcional realizado o seguinte calculo. 
+  Proporcial 1º mês - Valor Evento 973 dividido pelo quantidade de dias de férias multiplicado pelo quantidade de férias realizadas no 1º mês; 
+  Proporcial 2º mês - Valor Evento 973 dividido pelo quantidade de dias de férias multiplicado pelo quantidade de férias realizadas no 2º mês;
+
+Fora Escopo
+ - Desenvolver Relatório ou parametrização não mencionada nesta proposta;
+
+Desenvolvimento 08:00hrs 600,00
+
+
+Objetivo
+ Integração Webservice Duapi x Senior
+
+Escopo
+ Desenvolver Web Service para retornar o GHE do Colaborador e o seu gestor, conforme posto
+ de trabalho.
+
+Parâmetros de Entrada:
+ • Empresa
+ • Tipo Colaborador
+ • Cadastro Colaborador
+ • Data Consulta
+
+Parâmetros de Saída:
+ • Código GHE
+ • Descrição GHE
+ • Descrição Posto
+ • Nome Colaborador
+ • Empresa
+ • Tipo Colaborador
+ • Cadastro Colaborador
+ • Posto de Trabalho
+ • Empresa Gestor
+ • Tipo Colaborador Gestor
+ • Cadastro Gestor
+ • Nome Gestor
+Não escopo
+ • Desenvolver Regras ou relatórios não mencionados nesta proposta;
+ • Desenvolver outros web services não mencionados nesta proposta;
+
+Desenvolvimento 10horas
+
+NumEmp   TipCol   NumCad   CodGhe   DesGhe   PosTra   NomFun   CadGes   NomGes   DesPos  
+Tabelas: 
+  R034Fun -> Cadastro de Colaborador
+  R017Pos -> Posto de trabalho
